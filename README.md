@@ -69,3 +69,14 @@ Verify DNS Resolution
 Use nslookup to verify DNS resolution:
 
 nslookup nginx.example.com
+
+Access the Application
+Open your browser and navigate to http://nginx.example.com. You should see the default NGINX welcome page.
+
+for clean up
+kubectl delete -f manifests/nginx-ingress.yaml
+kubectl delete -f manifests/nginx-service.yaml
+kubectl delete -f manifests/nginx-deployment.yaml
+helm uninstall ingress-nginx -n ingress-nginx
+kubectl delete namespace ingress-nginx
+

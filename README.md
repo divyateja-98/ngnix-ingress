@@ -1,51 +1,71 @@
 # ngnix-ingress
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/cloud/deploy.yaml
-kubectl get pods --namespace ingress-nginx
-kubectl port-forward --namespace ingress-nginx service/ingress-nginx-controller 8080:80
-kubectl create deployment nginx-app --image=nginx
-kubectl expose deployment nginx-app --port=80 --target-port=80
-Create a file named nginx-ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: nginx-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: mydomain.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nginx-app
-            port:
-              number: 80
+# Exposing NGINX via Ingress and Custom Domain on AWS EKS
 
-       kubectl apply -f nginx-ingress.yaml
- Replace yourdomain.example.com with your actual domain name
-Configure DNS with AWS Route 53
-To point your domain to the Ingress Controller, create a CNAME record in Route 53:
-serverfault.com
+This guide demonstrates how to:
 
-Log in to the AWS Management Console and navigate to Route 53.
+- Install the NGINX Ingress Controller on an AWS EKS cluster.
+- Deploy an NGINX application.
+- Expose the application using an Ingress resource.
+- Configure a custom domain in AWS Route 53 to point to the Ingress Controller.
 
-Select your hosted zone.
+## Prerequisites
+
+- AWS CLI configured with appropriate credentials.
+- `kubectl` configured to interact with your EKS cluster.
+- Helm installed in your environment.
+- A registered domain name managed via AWS Route 53.
+
+## Steps
+
+1. Clone the Repository
+
+```bash
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
+
+
+2.(a)Install NGINX Ingress Controller
+Add the ingress-nginx Helm repository:
+
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+(b)Install the NGINX Ingress Controller
+
+    1.kubectl create namespace ingress-nginx
+
+    2. helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --set controller.service.type=LoadBalancer
+   Wait for the LoadBalancer IP to be assigned:
+
+kubectl get services -n ingress-nginx
+Note the EXTERNAL-IP of the ingress-nginx-controller service.
+
+3.Deploy NGINX Application
+Apply the deployment and service manifests:
+
+kubectl apply -f manifests/nginx-deployment.yaml
+kubectl apply -f manifests/nginx-service.yaml
+4. Create Ingress Resource
+Apply the Ingress manifest:
+
+kubectl apply -f manifests/nginx-ingress.yaml
+5. Configure AWS Route 53
+In the AWS Route 53 console:
+
+Navigate to your hosted zone.
 
 Create a new record:
 
-Record name: mydomain.example.com
+Record name: nginx.example.com (replace with your domain)
 
-Record type: CNAME
+Record type: A – IPv4 address
 
-Value: The public URL provided by Codespaces for port 8080, typically in the format https://<CODESPACE_NAME>-8080.app.github.dev
+Alias: Yes
 
-This setup directs traffic from yourdomain.example.com to the NGINX application
+Alias Target: Select the LoadBalancer DNS name of the ingress-nginx-controller service.
+Verify DNS Resolution
+Use nslookup to verify DNS resolution:
 
-nslookup yourdomain.example.com
-
-
+nslookup nginx.example.com
